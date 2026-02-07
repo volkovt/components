@@ -1,0 +1,15 @@
+{
+  "name": "comfortable",
+  "metrics": {
+    "radius_sm": 10,
+    "radius_md": 14,
+    "radius_lg": 18,
+    "pad_xs": 8,
+    "pad_sm": 12,
+    "pad_md": 16,
+    "pad_lg": 20,
+    "h_sm": 36,
+    "h_md": 42,
+    "h_lg": 48
+  }
+}

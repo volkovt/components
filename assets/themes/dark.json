@@ -1,0 +1,39 @@
+{
+  "name": "dark",
+  "colors": {
+    "bg": "#0B0F14",
+    "surface": "#111827",
+    "surface_2": "#0F172A",
+    "text": "#E5E7EB",
+    "text_muted": "#9CA3AF",
+    "border": "#223047",
+    "primary": "#2563EB",
+    "primary_hover": "#1D4ED8",
+    "primary_pressed": "#1E40AF",
+    "success": "#16A34A",
+    "warning": "#F59E0B",
+    "danger": "#DC2626",
+    "info": "#0EA5E9",
+    "focus": "#60A5FA",
+    "disabled_fg": "#6B7280",
+    "disabled_bg": "#0B1220",
+    "on_primary": "#FFFFFF",
+    "on_danger": "#FFFFFF"
+  },
+  "effects": {
+    "overlay": "rgba(0,0,0,140)",
+    "success_bg": "rgba(22,163,74,28)",
+    "warning_bg": "rgba(245,158,11,28)",
+    "danger_bg": "rgba(220,38,38,28)",
+    "info_bg": "rgba(14,165,233,28)"
+  },
+  "typography": {
+    "font_family": "Segoe UI",
+    "font_size": 12,
+    "font_size_sm": 11,
+    "font_size_lg": 14,
+    "font_size_xl": 18,
+    "weight_regular": 500,
+    "weight_bold": 700
+  }
+}

@@ -1,0 +1,18 @@
+/* Inputs */
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+  background: {{colors.surface}};
+  border: 1px solid {{colors.border}};
+  border-radius: {{metrics.radius_md}}px;
+  padding: {{metrics.pad_sm}}px {{metrics.pad_md}}px;
+  min-height: {{metrics.h_md}}px;
+  selection-background-color: {{colors.primary}};
+}
+
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
+  border-color: {{colors.focus}};
+}
+
+QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {
+  background: {{colors.disabled_bg}};
+  color: {{colors.disabled_fg}};
+}

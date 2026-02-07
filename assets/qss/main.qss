@@ -1,0 +1,9 @@
+/* Compiled by ThemeManager: Do not edit final output; edit the individual files */
+/* base */
+@include base.qss
+@include typography.qss
+@include buttons.qss
+@include inputs.qss
+@include views.qss
+@include dialogs.qss
+@include tabs.qss

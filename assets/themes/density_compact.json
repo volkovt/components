@@ -1,0 +1,15 @@
+{
+  "name": "compact",
+  "metrics": {
+    "radius_sm": 8,
+    "radius_md": 10,
+    "radius_lg": 14,
+    "pad_xs": 4,
+    "pad_sm": 8,
+    "pad_md": 10,
+    "pad_lg": 12,
+    "h_sm": 28,
+    "h_md": 34,
+    "h_lg": 40
+  }
+}

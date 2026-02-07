@@ -1,0 +1,39 @@
+{
+  "name": "light",
+  "colors": {
+    "bg": "#F8FAFC",
+    "surface": "#FFFFFF",
+    "surface_2": "#F1F5F9",
+    "text": "#0F172A",
+    "text_muted": "#475569",
+    "border": "#CBD5E1",
+    "primary": "#2563EB",
+    "primary_hover": "#1D4ED8",
+    "primary_pressed": "#1E40AF",
+    "success": "#16A34A",
+    "warning": "#F59E0B",
+    "danger": "#DC2626",
+    "info": "#0284C7",
+    "focus": "#2563EB",
+    "disabled_fg": "#94A3B8",
+    "disabled_bg": "#E2E8F0",
+    "on_primary": "#FFFFFF",
+    "on_danger": "#FFFFFF"
+  },
+  "effects": {
+    "overlay": "rgba(15,23,42,80)",
+    "success_bg": "rgba(22,163,74,18)",
+    "warning_bg": "rgba(245,158,11,18)",
+    "danger_bg": "rgba(220,38,38,18)",
+    "info_bg": "rgba(2,132,199,18)"
+  },
+  "typography": {
+    "font_family": "Segoe UI",
+    "font_size": 12,
+    "font_size_sm": 11,
+    "font_size_lg": 14,
+    "font_size_xl": 18,
+    "weight_regular": 500,
+    "weight_bold": 700
+  }
+}

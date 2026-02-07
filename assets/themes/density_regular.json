@@ -1,0 +1,15 @@
+{
+  "name": "regular",
+  "metrics": {
+    "radius_sm": 8,
+    "radius_md": 12,
+    "radius_lg": 16,
+    "pad_xs": 6,
+    "pad_sm": 10,
+    "pad_md": 14,
+    "pad_lg": 18,
+    "h_sm": 32,
+    "h_md": 38,
+    "h_lg": 44
+  }
+}

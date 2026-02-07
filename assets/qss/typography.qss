@@ -1,0 +1,4 @@
+/* Typography helpers */
+QLabel[muted="true"] { color: {{colors.text_muted}}; }
+QLabel[title="h1"] { font-size: {{typography.font_size_xl}}px; font-weight: {{typography.weight_bold}}; }
+QLabel[title="h2"] { font-size: {{typography.font_size_lg}}px; font-weight: {{typography.weight_bold}}; }

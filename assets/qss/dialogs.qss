@@ -1,0 +1,10 @@
+/* Dialogs */
+QDialog {
+  background: {{colors.bg}};
+}
+
+QDialog QWidget[role="dialog_card"] {
+  background: {{colors.surface}};
+  border: 1px solid {{colors.border}};
+  border-radius: {{metrics.radius_lg}}px;
+}

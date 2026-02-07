@@ -1,0 +1,17 @@
+/* Tabs */
+QTabWidget::pane {
+  border: 1px solid {{colors.border}};
+  border-radius: {{metrics.radius_lg}}px;
+  background: {{colors.surface}};
+}
+
+QTabBar::tab {
+  background: {{colors.surface_2}};
+  border: 1px solid {{colors.border}};
+  padding: {{metrics.pad_sm}}px {{metrics.pad_md}}px;
+  border-top-left-radius: {{metrics.radius_md}}px;
+  border-top-right-radius: {{metrics.radius_md}}px;
+  margin-right: 4px;
+}
+QTabBar::tab:selected { background: {{colors.surface}}; border-bottom-color: {{colors.surface}}; }
+QTabBar::tab:hover { border-color: {{colors.focus}}; }

@@ -1,0 +1,17 @@
+/* Views */
+QTableView, QListView, QTreeView {
+  background: {{colors.surface}};
+  border: 1px solid {{colors.border}};
+  border-radius: {{metrics.radius_lg}}px;
+}
+
+QHeaderView::section {
+  background: {{colors.surface_2}};
+  border: 1px solid {{colors.border}};
+  padding: {{metrics.pad_sm}}px;
+  font-weight: {{typography.weight_bold}};
+}
+
+QTableView::item:selected, QListView::item:selected, QTreeView::item:selected {
+  background: {{effects.info_bg}};
+}

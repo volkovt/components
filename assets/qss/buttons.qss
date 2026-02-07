@@ -1,0 +1,50 @@
+/* Buttons */
+QPushButton {
+  background: {{colors.surface}};
+  border: 1px solid {{colors.border}};
+  border-radius: {{metrics.radius_md}}px;
+  padding: {{metrics.pad_sm}}px {{metrics.pad_md}}px;
+  min-height: {{metrics.h_md}}px;
+}
+
+QPushButton:hover { border-color: {{colors.focus}}; }
+QPushButton:pressed { background: {{colors.surface_2}}; }
+
+QPushButton:disabled {
+  color: {{colors.disabled_fg}};
+  background: {{colors.disabled_bg}};
+  border-color: {{colors.border}};
+}
+
+/* Variants */
+QPushButton[variant="primary"] {
+  background: {{colors.primary}};
+  border-color: {{colors.primary}};
+  font-weight: {{typography.weight_bold}};
+  color: {{colors.on_primary}};
+}
+QPushButton[variant="primary"]:hover {
+  background: {{colors.primary_hover}};
+  border-color: {{colors.primary_hover}};
+}
+QPushButton[variant="primary"]:pressed {
+  background: {{colors.primary_pressed}};
+  border-color: {{colors.primary_pressed}};
+}
+
+QPushButton[variant="ghost"] {
+  background: transparent;
+  border: 1px solid {{colors.border}};
+}
+
+QPushButton[variant="danger"] {
+  background: {{colors.danger}};
+  border-color: {{colors.danger}};
+  font-weight: {{typography.weight_bold}};
+  color: {{colors.on_danger}};
+}
+
+/* States */
+QPushButton[state="success"] { border-color: {{colors.success}}; background: {{effects.success_bg}}; }
+QPushButton[state="warning"] { border-color: {{colors.warning}}; background: {{effects.warning_bg}}; }
+QPushButton[state="error"]   { border-color: {{colors.danger}};  background: {{effects.danger_bg}}; }

@@ -1,0 +1,26 @@
+/* Base primitives */
+* {
+  font-family: "{{typography.font_family}}";
+  font-size: {{typography.font_size}}px;
+  color: {{colors.text}};
+}
+
+QWidget {
+  background: {{colors.bg}};
+}
+
+QToolTip {
+  background: {{colors.surface}};
+  color: {{colors.text}};
+  border: 1px solid {{colors.border}};
+  padding: {{metrics.pad_xs}}px {{metrics.pad_sm}}px;
+  border-radius: {{metrics.radius_sm}}px;
+}
+
+QWidget[role="surface"] {
+  background: {{colors.surface}};
+  border: 1px solid {{colors.border}};
+  border-radius: {{metrics.radius_lg}}px;
+}
+
+QWidget[role="overlay"] { background: {{effects.overlay}}; }
