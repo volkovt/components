@@ -2,3 +2,31 @@
 QLabel[muted="true"] { color: {{colors.text_muted}}; }
 QLabel[title="h1"] { font-size: {{typography.font_size_xl}}px; font-weight: {{typography.weight_bold}}; }
 QLabel[title="h2"] { font-size: {{typography.font_size_lg}}px; font-weight: {{typography.weight_bold}}; }
+
+/* Role-based labels (AppWidgetMixin uses role=...) */
+QLabel[role="title"] {
+  font-size: {{typography.font_size_xl}}px;
+  font-weight: {{typography.weight_bold}};
+}
+QLabel[role="subtitle"] {
+  font-size: {{typography.font_size_lg}}px;
+  font-weight: {{typography.weight_bold}};
+}
+QLabel[role="muted"] {
+  color: {{colors.text_muted}};
+}
+
+/* Badge */
+QLabel[role="badge"] {
+  background: {{colors.surface_2}};
+  border: 1px solid {{colors.border}};
+  border-radius: {{metrics.radius_sm}}px;
+  padding: 2px {{metrics.pad_sm}}px;
+  font-size: {{typography.font_size_sm}}px;
+}
+
+/* Badge states */
+QLabel[role="badge"][state="info"]    { border-color: {{colors.info}};    background: {{effects.info_bg}}; }
+QLabel[role="badge"][state="success"] { border-color: {{colors.success}}; background: {{effects.success_bg}}; }
+QLabel[role="badge"][state="warning"] { border-color: {{colors.warning}}; background: {{effects.warning_bg}}; }
+QLabel[role="badge"][state="error"]   { border-color: {{colors.danger}} ; background: {{effects.danger_bg}}; }

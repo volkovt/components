@@ -66,21 +66,26 @@ class _LoadingOverlay(QWidget):
 
         self._card = Card()
         self._card.setMaximumWidth(520)
+        self._card.setProperty("role", "overlay_card")
         self._card.body.setContentsMargins(18, 16, 18, 16)
         self._card.body.setSpacing(10)
 
         self._title = TitleLabel("Processando…")
         self._title.setProperty("role", "subtitle")
+
         self._subtitle = MutedLabel("Aguarde um momento.")
+
         self._bar = QProgressBar()
         self._bar.setRange(0, 0)
         self._bar.setTextVisible(False)
+        self._bar.setProperty("role", "overlay_bar")
 
         self._cancel_row = QWidget()
         cr = QHBoxLayout(self._cancel_row)
         cr.setContentsMargins(0, 6, 0, 0)
         cr.setSpacing(10)
         cr.setAlignment(Qt.AlignRight)
+
         self._btn_cancel = GhostButton("Cancelar", on_click=self._on_cancel_clicked)
         cr.addWidget(self._btn_cancel)
         self._cancel_row.hide()
@@ -111,8 +116,7 @@ class _LoadingOverlay(QWidget):
 
 
 class AppDialog(QDialog):
-    """Super-wrapper para QDialog com header actions, presets de tamanho e loading overlay."""
-
+    """Dialog wrapper com 'safe area' (evita resize border invadir conteúdo) e shell em card."""
     def __init__(
         self,
         title: str,
@@ -133,15 +137,29 @@ class AppDialog(QDialog):
         sizing = _PRESETS[size]
         self.setMinimumSize(QSize(sizing.min_width, sizing.min_height))
         self.resize(QSize(sizing.default_width, sizing.default_height))
-
         if not resizable:
             self.setFixedSize(QSize(sizing.default_width, sizing.default_height))
 
-        root = QVBoxLayout(self)
-        root.setContentsMargins(18, 18, 18, 18)
-        root.setSpacing(12)
+        self._is_loading = False
 
-        self._header = QWidget(self)
+        safe = 14
+        card_pad = 18
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(safe, safe, safe, safe)
+        root.setSpacing(0)
+
+        self._card = QWidget(self)
+        self._card.setProperty("role", "dialog_card")
+
+        card_l = QVBoxLayout(self._card)
+        card_l.setContentsMargins(card_pad, card_pad, card_pad, card_pad)
+        card_l.setSpacing(12)
+
+        root.addWidget(self._card, 1)
+
+        self._header = QWidget(self._card)
+        self._header.setProperty("role", "dialog_header")
         header_l = QHBoxLayout(self._header)
         header_l.setContentsMargins(0, 0, 0, 0)
         header_l.setSpacing(10)
@@ -168,32 +186,38 @@ class AppDialog(QDialog):
         header_l.addWidget(titles, 1)
         header_l.addWidget(self._header_actions, 0)
 
-        root.addWidget(self._header)
-        root.addWidget(Divider())
+        card_l.addWidget(self._header)
+        card_l.addWidget(Divider())
 
-        self.body = QVBoxLayout()
-        self.body.setContentsMargins(0, 0, 0, 0)
-        self.body.setSpacing(12)
-        root.addLayout(self.body, 1)
+        self._body_host = QWidget(self._card)
+        self._body_host.setProperty("role", "dialog_body")
+        body_l = QVBoxLayout(self._body_host)
+        body_l.setContentsMargins(0, 0, 0, 0)
+        body_l.setSpacing(12)
 
-        root.addWidget(Divider())
-        self._footer = QWidget(self)
+        self.body = body_l
+        card_l.addWidget(self._body_host, 1)
+
+        card_l.addWidget(Divider())
+
+        self._footer = QWidget(self._card)
         self._footer.setProperty("role", "dialog_footer")
+
         footer_l = QHBoxLayout(self._footer)
         footer_l.setContentsMargins(0, 0, 0, 0)
         footer_l.setSpacing(10)
         footer_l.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
         self.footer = footer_l
-        root.addWidget(self._footer)
+        card_l.addWidget(self._footer)
 
         self._size_grip: Optional[QSizeGrip] = None
         if resizable and show_size_grip:
-            self._size_grip = QSizeGrip(self)
+            self._size_grip = QSizeGrip(self._card)
             self._size_grip.setProperty("role", "size_grip")
-            self._size_grip.setFixedSize(16, 16)
+            self._size_grip.setFixedSize(14, 14)
 
-        self._overlay = _LoadingOverlay(self)
-        self._is_loading = False
+        self._overlay = _LoadingOverlay(self._card)
 
         self.installEventFilter(self)
         QTimer.singleShot(0, self._sync_overlay_geometry)
@@ -210,7 +234,9 @@ class AppDialog(QDialog):
         btn.setEnabled(enabled)
         if tooltip:
             btn.setToolTip(tooltip)
-        self._header_actions.layout().addWidget(btn)  # type: ignore[arg-type]
+        layout = self._header_actions.layout()
+        if layout:
+            layout.addWidget(btn)  # type: ignore[arg-type]
         return btn
 
     def clear_header_actions(self) -> None:
@@ -275,29 +301,24 @@ class AppDialog(QDialog):
 
         self._overlay.set_message(title, subtitle)
         self._overlay.set_cancellable(cancellable, on_cancel)
-
         self._overlay.setVisible(self._is_loading)
+
         self._set_content_enabled(not self._is_loading)
         self._sync_overlay_geometry()
 
     def _set_content_enabled(self, enabled: bool) -> None:
         self._header.setEnabled(enabled)
         self._footer.setEnabled(enabled)
-        for w in self.findChildren(QWidget):
-            if w is self._overlay or self._overlay.isAncestorOf(w):
-                continue
-            if w is self._header or self._header.isAncestorOf(w):
-                continue
-            if w is self._footer or self._footer.isAncestorOf(w):
-                continue
-            if w.parent() and (w.parent() == self or self.isAncestorOf(w)):
-                w.setEnabled(enabled)
+        self._body_host.setEnabled(enabled)
 
     def _sync_overlay_geometry(self) -> None:
-        self._overlay.setGeometry(self.rect())
+        self._overlay.setGeometry(self._card.rect())
         if self._size_grip is not None:
             m = 10
-            self._size_grip.move(self.width() - self._size_grip.width() - m, self.height() - self._size_grip.height() - m)
+            self._size_grip.move(
+                self._card.width() - self._size_grip.width() - m,
+                self._card.height() - self._size_grip.height() - m,
+            )
             self._size_grip.setVisible(not self._is_loading)
 
     def resizeEvent(self, event) -> None:

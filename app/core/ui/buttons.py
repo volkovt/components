@@ -44,12 +44,33 @@ class DangerButton(AppButton):
         super().__init__(text=text, parent=parent, on_click=on_click, variant="danger", icon=icon)
 
 class AppToolButton(QToolButton, AppWidgetMixin):
-    def __init__(self, text: str = "", parent=None, icon: Optional[QIcon] = None, on_click=None):
+    def __init__(
+        self,
+        text: str = "",
+        parent=None,
+        icon: Optional[QIcon] = None,
+        on_click: Optional[Callable[[], None]] = None,
+        *,
+        icon_size: int = 18,
+        square: bool = False,
+        size: int = 32,
+    ):
         super().__init__(parent)
+        self.setProperty("variant", "tool")
         self.setText(text)
-        self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        if text.strip():
+            self.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        else:
+            self.setToolButtonStyle(Qt.ToolButtonIconOnly)
+
         if icon is not None:
             self.setIcon(icon)
+            self.setIconSize(QSize(icon_size, icon_size))
+        if square:
+            self.setFixedSize(size, size)
+        self.setContentsMargins(0, 0, 0, 0)
+
         if on_click:
             self.clicked.connect(on_click)
+
         set_default_focus_policy(self)

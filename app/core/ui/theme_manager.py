@@ -5,23 +5,21 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable
 
 from PySide6.QtCore import QFileSystemWatcher, QObject, Signal
 from PySide6.QtWidgets import QApplication
 
 from .theme_types import DensityMode, ThemeMode, ThemePaths, ThemeSelection
 
-
 _TOKEN_PATTERN = re.compile(r"\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}")
-
 
 @dataclass(frozen=True)
 class CompiledTheme:
     selection: ThemeSelection
     qss: str
     fingerprint: str
-
+    tokens: Dict[str, Any]
 
 class ThemeError(RuntimeError):
     pass
@@ -37,6 +35,7 @@ class ThemeManager(QObject):
         self._dev_hot_reload = dev_hot_reload
         self._cache: Dict[str, CompiledTheme] = {}
         self._watcher: QFileSystemWatcher | None = None
+        self._last_compiled: CompiledTheme | None = None  # <-- NOVO
 
         if self._dev_hot_reload:
             self._setup_watcher()
@@ -48,9 +47,14 @@ class ThemeManager(QObject):
     def set_selection(self, selection: ThemeSelection) -> None:
         self._selection = selection
 
+    @property
+    def last_compiled(self) -> CompiledTheme | None:
+        return self._last_compiled
+
     def apply(self, app: QApplication) -> CompiledTheme:
         compiled = self.compile(self._selection)
         app.setStyleSheet(compiled.qss)
+        self._last_compiled = compiled  # <-- NOVO
         self.theme_changed.emit(compiled.fingerprint)
         return compiled
 
@@ -62,7 +66,7 @@ class ThemeManager(QObject):
 
         tokens = self._load_tokens(selection)
         qss = self._compile_qss(tokens)
-        compiled = CompiledTheme(selection=selection, qss=qss, fingerprint=fingerprint)
+        compiled = CompiledTheme(selection=selection, qss=qss, fingerprint=fingerprint, tokens=tokens)  # <-- NOVO
         self._cache[fingerprint] = compiled
         return compiled
 

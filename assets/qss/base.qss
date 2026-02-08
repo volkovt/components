@@ -24,3 +24,8 @@ QWidget[role="surface"] {
 }
 
 QWidget[role="overlay"] { background: {{effects.overlay}}; }
+
+
+QIcon {
+  color: {{colors.text}};
+}

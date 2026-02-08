@@ -21,13 +21,14 @@ from .containers import Card, Section, Divider, Toolbar
 from .dialogs import AppDialog, DialogSizePreset, FormDialog, confirm_destructive
 from .feedback import AppProgressBar, InlineStatus
 from .inputs import AppLineEdit, AppTextEdit, AppPlainTextEdit, AppComboBox, AppSpinBox, AppDoubleSpinBox, \
-    AppDateTimeEdit, AppTimeEdit, AppDateEdit, int_validator, money_validator
+    AppDateTimeEdit, AppTimeEdit, AppDateEdit, int_validator, money_validator, AppMoneyLineEdit
 from .layout import vbox, hbox
 from .messagebox import AppMessageBox
 from .scroll import AppScrollArea
+from .tables import AppTable, InMemoryTablePort, SortSpec, FilterSpec
 from .tabs import AppTabWidget
 from .theme_types import ThemeMode
-from .theme_types import DensityMode as Density  # backwards-friendly alias
+from .theme_types import DensityMode as Density
 from .typography import TitleLabel, SubtitleLabel, MutedLabel, Badge
 from .views import AppTableView, SimpleTableModel
 from .window import AppMainWindow
@@ -139,6 +140,7 @@ __all__ = [
     "AppLineEdit",
     "AppTextEdit",
     "AppPlainTextEdit",
+    "AppMoneyLineEdit",
     "AppComboBox",
     "AppSpinBox",
     "AppDoubleSpinBox",
@@ -176,5 +178,11 @@ __all__ = [
     "AppApplication",
     "AppMessageBox",
     "AppTabWidget",
+
+    # Table
+    "AppTable",
+    "InMemoryTablePort",
+    "FilterSpec",
+    "SortSpec"
 ]
 

@@ -1,10 +1,39 @@
 /* Dialogs */
-QDialog {
+QDialog[role="dialog"] {
   background: {{colors.bg}};
 }
 
+/* Shell interno do dialog */
 QDialog QWidget[role="dialog_card"] {
   background: {{colors.surface}};
   border: 1px solid {{colors.border}};
   border-radius: {{metrics.radius_lg}}px;
+}
+
+/* Header/Body/Footer (ajuda no acabamento sem precisar de widgets extras) */
+QDialog QWidget[role="dialog_header"] {
+  background: transparent;
+}
+
+QDialog QWidget[role="dialog_body"] {
+  background: transparent;
+}
+
+QDialog QWidget[role="dialog_footer"] {
+  background: transparent;
+}
+
+/* Overlay */
+QDialog QWidget[role="overlay"] {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: {{metrics.radius_lg}}px;
+}
+
+QDialog QWidget[role="overlay_card"] {
+  border: 1px solid {{colors.border}};
+}
+
+/* Size grip discreto */
+QDialog QSizeGrip[role="size_grip"] {
+  background: transparent;
 }

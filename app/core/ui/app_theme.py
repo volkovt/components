@@ -1,3 +1,4 @@
+# app/core/ui/app_theme.py
 from __future__ import annotations
 
 from pathlib import Path
@@ -6,6 +7,7 @@ from PySide6.QtWidgets import QApplication
 
 from .theme_manager import ThemeManager
 from .theme_types import DensityMode, ThemeMode, ThemeSelection
+from .icon_theme import IconTheme
 
 
 class AppTheme:
@@ -14,8 +16,20 @@ class AppTheme:
     Keeps old call sites stable: apply_app_theme() can just delegate here.
     """
 
-    def __init__(self, project_root: Path, theme: ThemeMode = ThemeMode.DARK, density: DensityMode = DensityMode.REGULAR, dev_hot_reload: bool = False):
-        self._manager = ThemeManager(project_root=project_root, selection=ThemeSelection.with_(theme, density), dev_hot_reload=dev_hot_reload)
+    def __init__(
+        self,
+        project_root: Path,
+        theme: ThemeMode = ThemeMode.DARK,
+        density: DensityMode = DensityMode.REGULAR,
+        dev_hot_reload: bool = False,
+    ):
+        self._manager = ThemeManager(
+            project_root=project_root,
+            selection=ThemeSelection.with_(theme, density),
+            dev_hot_reload=dev_hot_reload,
+        )
+
+        self._manager.theme_changed.connect(self._on_theme_changed)
 
     @property
     def manager(self) -> ThemeManager:
@@ -30,4 +44,11 @@ class AppTheme:
         self._manager.set_selection(ThemeSelection.with_(sel.theme, density))
 
     def apply(self, app: QApplication) -> None:
-        self._manager.apply(app)
+        compiled = self._manager.apply(app)
+        # Aplica tokens do tema no qtawesome (defaults + refresh)
+        IconTheme.apply_tokens(compiled.tokens)
+
+    def _on_theme_changed(self, _fingerprint: str) -> None:
+        compiled = self._manager.last_compiled
+        if compiled:
+            IconTheme.apply_tokens(compiled.tokens)

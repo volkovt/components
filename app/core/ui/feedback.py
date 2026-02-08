@@ -10,7 +10,7 @@ from .base import AppWidgetMixin
 class InlineStatus(QWidget, AppWidgetMixin):
     def __init__(self, parent=None):
         super().__init__(parent)
-
+        self.setProperty("role", "inline_status")
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         layout = QHBoxLayout(self)
@@ -32,7 +32,7 @@ class InlineStatus(QWidget, AppWidgetMixin):
 
     def show_info(self, message: str, label: str = "Info"):
         self.badge.setText(label)
-        self.badge.clear_state()
+        self.badge.set_state("info")
         self.text.setText(message)
         self.show()
 

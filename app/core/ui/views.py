@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import QTableView, QTreeView, QListView
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
-
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSortFilterProxyModel
 from .base import AppWidgetMixin, set_default_focus_policy
+
 
 class AppTableView(QTableView, AppWidgetMixin):
     def __init__(self, parent=None):
@@ -18,6 +18,28 @@ class AppTableView(QTableView, AppWidgetMixin):
         self.horizontalHeader().setStretchLastSection(True)
         set_default_focus_policy(self)
 
+        self._proxy: QSortFilterProxyModel | None = None
+
+    def setModel(self, model):  # type: ignore[override]
+        if model is None:
+            super().setModel(model)
+            self._proxy = None
+            return
+
+        if isinstance(model, QSortFilterProxyModel):
+            self._proxy = model
+            self._proxy.setSortRole(Qt.UserRole)
+            super().setModel(model)
+            return
+
+        proxy = QSortFilterProxyModel(self)
+        proxy.setSourceModel(model)
+        proxy.setSortRole(Qt.UserRole)
+        proxy.setDynamicSortFilter(True)
+        self._proxy = proxy
+        super().setModel(proxy)
+
+
 class AppTreeView(QTreeView, AppWidgetMixin):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -28,11 +50,13 @@ class AppTreeView(QTreeView, AppWidgetMixin):
         self.setSelectionMode(QTreeView.SingleSelection)
         set_default_focus_policy(self)
 
+
 class AppListView(QListView, AppWidgetMixin):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setSelectionMode(QListView.SingleSelection)
         set_default_focus_policy(self)
+
 
 class SimpleTableModel(QAbstractTableModel):
     def __init__(self, headers: list[str], columns, rows=None, parent=None):
@@ -50,10 +74,16 @@ class SimpleTableModel(QAbstractTableModel):
     def data(self, index: QModelIndex, role=Qt.DisplayRole):
         if not index.isValid():
             return None
+
+        row = self._rows[index.row()]
+        value = self._columns[index.column()](row)
+
+        if role == Qt.UserRole:
+            return value
+
         if role == Qt.DisplayRole:
-            row = self._rows[index.row()]
-            value = self._columns[index.column()](row)
             return "" if value is None else str(value)
+
         return None
 
     def headerData(self, section: int, orientation: Qt.Orientation, role=Qt.DisplayRole):

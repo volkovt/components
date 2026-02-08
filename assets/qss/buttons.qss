@@ -45,6 +45,51 @@ QPushButton[variant="danger"] {
 }
 
 /* States */
+QPushButton[state="info"] { border-color: {{colors.info}}; background: {{effects.info_bg}}; }
 QPushButton[state="success"] { border-color: {{colors.success}}; background: {{effects.success_bg}}; }
 QPushButton[state="warning"] { border-color: {{colors.warning}}; background: {{effects.warning_bg}}; }
 QPushButton[state="error"]   { border-color: {{colors.danger}};  background: {{effects.danger_bg}}; }
+
+QToolButton {
+  background: {{colors.surface}};
+  border: 1px solid {{colors.border}};
+  border-radius: {{metrics.radius_md}}px;
+  padding: {{metrics.pad_sm}}px {{metrics.pad_md}}px;
+  min-height: {{metrics.h_md}}px;
+}
+
+QToolButton:hover { border-color: {{colors.focus}}; }
+QToolButton:pressed { background: {{colors.surface_2}}; }
+QToolButton:disabled {
+  color: {{colors.disabled_fg}};
+  background: {{colors.disabled_bg}};
+  border-color: {{colors.border}};
+}
+
+/* Tool variant (optional, but keeps future-proof) */
+QToolButton[variant="tool"] {
+  background: {{colors.surface}};
+}
+
+/* States for ToolButton too */
+QToolButton[state="info"]    { border-color: {{colors.info}};    background: {{effects.info_bg}}; }
+QToolButton[state="success"] { border-color: {{colors.success}}; background: {{effects.success_bg}}; }
+QToolButton[state="warning"] { border-color: {{colors.warning}}; background: {{effects.warning_bg}}; }
+QToolButton[state="error"]   { border-color: {{colors.danger}};  background: {{effects.danger_bg}}; }
+
+
+QToolButton#GearButton {
+  padding: 0px;
+  border-radius: 19px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.10);
+}
+
+QToolButton#GearButton:hover {
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.06);
+}
+
+QToolButton#GearButton:pressed {
+  background: rgba(255,255,255,0.10);
+}
