@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
-from PySide6.QtWidgets import QMessageBox, QWidget
+from qtpy.QtWidgets import QMessageBox, QWidget
 
 
 @dataclass(frozen=True)

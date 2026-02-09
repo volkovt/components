@@ -4,20 +4,23 @@ import os
 import sys
 from pathlib import Path
 from typing import Optional, Mapping, Any
+from typing import TYPE_CHECKING
 
-from qtpy.QtWidgets import QApplication
 from qtpy import QtCore, QtWidgets
+
 
 from .app_theme import AppTheme
 from .theme_types import DensityMode, ThemeMode
 
+if TYPE_CHECKING:
+    from .application import AppApplication
 
 _THEME: Optional[AppTheme] = None
 _THEME_MODE: ThemeMode = ThemeMode.DARK
 _DENSITY: DensityMode = DensityMode.REGULAR
 
 
-def _project_root_from_app(app: QApplication) -> Path:
+def _project_root_from_app() -> Path:
     """Best-effort project root resolution.
 
     - In dev: uses current working directory.
@@ -51,7 +54,7 @@ def get_density() -> DensityMode:
     return _DENSITY
 
 
-def apply_app_theme(app: QApplication, *, project_root: Path | None = None, dev_hot_reload: bool | None = None) -> None:
+def apply_app_theme(app: AppApplication, *, project_root: Path | None = None, dev_hot_reload: bool | None = None) -> None:
     """Apply the current theme selection to the QApplication.
 
     This is the single entry-point the rest of the UI should call.
@@ -64,7 +67,7 @@ def apply_app_theme(app: QApplication, *, project_root: Path | None = None, dev_
     """
     global _THEME
 
-    root = (project_root or _project_root_from_app(app)).resolve()
+    root = (project_root or _project_root_from_app()).resolve()
     hot = dev_hot_reload if dev_hot_reload is not None else os.getenv("APP_THEME_HOT_RELOAD", "0") == "1"
 
     if _THEME is None:

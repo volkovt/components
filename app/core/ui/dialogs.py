@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Optional
 
-from PySide6.QtCore import Qt, QEvent, QSize, QTimer
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (
+from qtpy.QtCore import Qt, QEvent, QSize, QTimer
+from qtpy.QtGui import QIcon
+from qtpy.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,

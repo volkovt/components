@@ -1,18 +1,340 @@
-/* Inputs */
-QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+/* Inputs (enriched)
+   Cobertura: AppLineEdit / AppMoneyLineEdit, AppTextEdit, AppPlainTextEdit,
+              AppComboBox, AppSpinBox / AppDoubleSpinBox,
+              AppDateEdit / AppTimeEdit / AppDateTimeEdit.
+
+   AppWidgetMixin dynamic properties:
+   - state: "success" | "warning" | "error" | (None/limpo)
+*/
+
+/* ============================================================
+   Base (todos os inputs)
+   ============================================================ */
+
+QLineEdit, QTextEdit, QPlainTextEdit,
+QSpinBox, QDoubleSpinBox,
+QComboBox,
+QDateEdit, QTimeEdit, QDateTimeEdit {
   background: {{colors.surface}};
+  color: {{colors.text}};
   border: 1px solid {{colors.border}};
   border-radius: {{metrics.radius_md}}px;
-  padding: {{metrics.pad_sm}}px {{metrics.pad_md}}px;
+  padding-top: {{metrics.pad_sm}}px;
+  padding-bottom: {{metrics.pad_sm}}px;
+  padding-left: 10px;
+  padding-right: 10px;
   min-height: {{metrics.h_md}}px;
+
   selection-background-color: {{colors.primary}};
+  selection-color: {{colors.on_primary}};
 }
 
-QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
+/* Placeholder (Qt 5.12+/Qt6) */
+QLineEdit::placeholderText,
+QTextEdit::placeholderText,
+QPlainTextEdit::placeholderText {
+  color: {{colors.text_muted}};
+}
+
+/* Hover */
+QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover,
+QSpinBox:hover, QDoubleSpinBox:hover,
+QComboBox:hover,
+QDateEdit:hover, QTimeEdit:hover, QDateTimeEdit:hover {
+  border-color: {{colors.primary_hover}};
+  background: {{colors.surface_2}};
+}
+
+/* Focus */
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus,
+QSpinBox:focus, QDoubleSpinBox:focus,
+QComboBox:focus,
+QDateEdit:focus, QTimeEdit:focus, QDateTimeEdit:focus {
   border-color: {{colors.focus}};
+  background: {{colors.surface_2}};
 }
 
-QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {
+/* Disabled */
+QLineEdit:disabled, QTextEdit:disabled, QPlainTextEdit:disabled,
+QSpinBox:disabled, QDoubleSpinBox:disabled,
+QComboBox:disabled,
+QDateEdit:disabled, QTimeEdit:disabled, QDateTimeEdit:disabled {
   background: {{colors.disabled_bg}};
   color: {{colors.disabled_fg}};
+  border-color: {{colors.border}};
+}
+
+/* ============================================================
+   States (AppWidgetMixin: property state)
+   ============================================================ */
+
+QLineEdit[state="success"], QTextEdit[state="success"], QPlainTextEdit[state="success"],
+QSpinBox[state="success"], QDoubleSpinBox[state="success"],
+QComboBox[state="success"],
+QDateEdit[state="success"], QTimeEdit[state="success"], QDateTimeEdit[state="success"] {
+  border-color: {{colors.success}};
+}
+
+QLineEdit[state="warning"], QTextEdit[state="warning"], QPlainTextEdit[state="warning"],
+QSpinBox[state="warning"], QDoubleSpinBox[state="warning"],
+QComboBox[state="warning"],
+QDateEdit[state="warning"], QTimeEdit[state="warning"], QDateTimeEdit[state="warning"] {
+  border-color: {{colors.warning}};
+}
+
+QLineEdit[state="error"], QTextEdit[state="error"], QPlainTextEdit[state="error"],
+QSpinBox[state="error"], QDoubleSpinBox[state="error"],
+QComboBox[state="error"],
+QDateEdit[state="error"], QTimeEdit[state="error"], QDateTimeEdit[state="error"] {
+  border-color: {{colors.danger}};
+  background: {{effects.danger_bg}};
+}
+
+/* ============================================================
+   Text areas (QTextEdit / QPlainTextEdit)
+   ============================================================ */
+
+QTextEdit, QPlainTextEdit {
+  padding-top: {{metrics.pad_sm}}px;
+  padding-bottom: {{metrics.pad_sm}}px;
+}
+
+/* ============================================================
+   ComboBox
+   ============================================================ */
+
+QComboBox {
+  padding-right: 36px; /* espaço para a seta */
+}
+
+QComboBox::drop-down {
+  subcontrol-origin: padding;
+  subcontrol-position: top right;
+
+  width: 30px;
+  border-left: 1px solid {{colors.border}};
+  background: {{colors.surface_2}};
+
+  border-top-right-radius: {{metrics.radius_md}}px;
+  border-bottom-right-radius: {{metrics.radius_md}}px;
+}
+
+QComboBox::drop-down:hover {
+  background: {{colors.surface_2}};
+}
+
+QComboBox::down-arrow {
+  width: 10px;
+  height: 10px;
+}
+
+/* Popup da lista */
+QComboBox QAbstractItemView {
+  background: {{colors.surface_2}};
+  color: {{colors.text}};
+  border: 1px solid {{colors.border}};
+  border-radius: {{metrics.radius_md}}px;
+  padding: 6px;
+  outline: 0;
+
+  selection-background-color: {{colors.primary}};
+  selection-color: {{colors.on_primary}};
+}
+
+QComboBox QAbstractItemView::item {
+  padding: 8px 10px;
+  border-radius: {{metrics.radius_sm}}px;
+}
+
+QComboBox QAbstractItemView::item:hover {
+  background: {{colors.surface_2}};
+}
+
+/* ============================================================
+   SpinBox / DoubleSpinBox (stacked buttons clean)
+   ============================================================ */
+
+QSpinBox, QDoubleSpinBox {
+  padding: 6px 34px 6px 10px; /* espaço para botões à direita */
+}
+
+/* Botões stacked */
+QSpinBox::up-button, QDoubleSpinBox::up-button,
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+  subcontrol-origin: border;
+  width: 26px;
+  border-left: 1px solid {{colors.border}};
+  background: {{colors.surface_2}};
+}
+
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+  subcontrol-position: top right;
+  border-top-right-radius: {{metrics.radius_md}}px;
+}
+
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+  subcontrol-position: bottom right;
+  border-top: 1px solid {{colors.border}};
+  border-bottom-right-radius: {{metrics.radius_md}}px;
+}
+
+QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover,
+QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
+  background: {{colors.surface_2}};
+}
+
+QSpinBox::up-button:pressed, QDoubleSpinBox::up-button:pressed,
+QSpinBox::down-button:pressed, QDoubleSpinBox::down-button:pressed {
+  background: {{colors.primary_pressed}};
+}
+
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow,
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+  width: 10px;
+  height: 10px;
+}
+
+/* ============================================================
+   Date / Time / DateTime
+   ============================================================ */
+/* Date / Time / DateTime */
+QDateEdit {
+  padding-right: 15px;
+}
+
+QDateTimeEdit {
+    padding-right: 5px;
+}
+
+/* DateEdit/DateTimeEdit têm drop-down (calendar popup) */
+QDateEdit::drop-down, QDateTimeEdit::drop-down {
+  subcontrol-origin: border;
+  subcontrol-position: top right;
+
+  width: 25px;
+  border-left: 1px solid {{colors.border}};
+  background: {{colors.surface_2}};
+
+  border-top-right-radius: {{metrics.radius_md}}px;
+  border-bottom-right-radius: {{metrics.radius_md}}px;
+}
+
+QDateEdit::drop-down:hover, QDateTimeEdit::drop-down:hover {
+  background: {{colors.surface_2}};
+}
+
+QDateEdit::down-arrow, QDateTimeEdit::down-arrow {
+  width: 10px;
+  height: 10px;
+}
+
+/* Calendar popup */
+QCalendarWidget QWidget {
+  background: {{colors.surface_2}};
+  color: {{colors.text}};
+}
+
+QCalendarWidget QToolButton {
+  background: transparent;
+  color: {{colors.text}};
+  border: 1px solid transparent;
+  border-radius: {{metrics.radius_sm}}px;
+  padding: 6px 10px;
+}
+
+QCalendarWidget QToolButton:hover {
+  background: {{colors.surface_2}};
+  border-color: {{colors.primary_hover}};
+}
+
+QCalendarWidget QAbstractItemView {
+  outline: 0;
+  background: {{colors.surface_2}};
+  color: {{colors.text}};
+  selection-background-color: {{colors.primary}};
+  selection-color: {{colors.on_primary}};
+}
+
+/* ============================================================
+   TimeEdit (stacked buttons como SpinBox)
+   ============================================================ */
+
+QTimeEdit {
+  padding: 6px 34px 6px 10px; /* espaço para botões à direita (igual SpinBox) */
+}
+
+/* Botões stacked */
+QTimeEdit::up-button,
+QTimeEdit::down-button {
+  subcontrol-origin: border;
+  width: 26px;
+  border-left: 1px solid {{colors.border}};
+  background: {{colors.surface_2}};
+}
+
+QTimeEdit::up-button {
+  subcontrol-position: top right;
+  border-top-right-radius: {{metrics.radius_md}}px;
+}
+
+QTimeEdit::down-button {
+  subcontrol-position: bottom right;
+  border-top: 1px solid {{colors.border}};
+  border-bottom-right-radius: {{metrics.radius_md}}px;
+}
+
+QTimeEdit::up-button:hover,
+QTimeEdit::down-button:hover {
+  background: {{colors.surface_2}};
+}
+
+QTimeEdit::up-button:pressed,
+QTimeEdit::down-button:pressed {
+  background: {{colors.primary_pressed}};
+}
+
+QTimeEdit::up-arrow,
+QTimeEdit::down-arrow {
+  width: 9px;
+  height: 9px;
+}
+
+/* ============================================================
+   Scrollbars (suaves)
+   ============================================================ */
+
+QScrollBar:vertical {
+  background: transparent;
+  width: 10px;
+  margin: 2px;
+}
+QScrollBar::handle:vertical {
+  background: {{colors.primary}};
+  border-radius: 5px;
+  min-height: 24px;
+}
+QScrollBar::handle:vertical:hover {
+  background: {{colors.primary_hover}};
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+  height: 0px;
+  width: 0px;
+}
+
+QScrollBar:horizontal {
+  background: transparent;
+  height: 10px;
+  margin: 2px;
+}
+QScrollBar::handle:horizontal {
+  background: {{colors.primary}};
+  border-radius: 5px;
+  min-width: 24px;
+}
+QScrollBar::handle:horizontal:hover {
+  background: {{colors.primary_hover}};
+}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+  height: 0px;
+  width: 0px;
 }

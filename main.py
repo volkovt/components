@@ -85,7 +85,6 @@ class DemoWindow(AppMainWindow):
         self._thread_pool = QThreadPool.globalInstance()
         self._project_root = self._resolve_project_root()
         self.setWindowTitle("UI Components Demo (App*) — Theme • Density • Tables • Export • Ports")
-        self.resize(1200, 800)
 
         self._products = [
             Product(1, "Produto A", "A", 10.50, True),
@@ -544,12 +543,11 @@ class DemoWindow(AppMainWindow):
 
         money_card.body.addWidget(Divider())
 
-        # (D) Forçar separadores (quando você quer padronizar UI independente do locale)
         money_card.body.addWidget(_section_title("Separadores forçados • padronização global"))
 
         m_forced_pt = AppMoneyLineEdit(
             prefix="R$",
-            locale=QLocale(QLocale.English, QLocale.UnitedStates),  # locale "não combina", mas UI vai ser forçada
+            locale=QLocale(QLocale.English, QLocale.UnitedStates),
             decimals=2,
             grouping_enabled=True,
             auto_format_on_change=True,
@@ -588,7 +586,6 @@ class DemoWindow(AppMainWindow):
 
         money_card.body.addWidget(Divider())
 
-        # (E) Ações / demonstração (set_value, validate, clear, exemplos de paste)
         money_card.body.addWidget(_section_title("Ações rápidas • set_value • paste-friendly"))
 
         hint = MutedLabel(

@@ -6,7 +6,6 @@ from typing import Any, Iterable, Mapping, Sequence, Tuple
 
 from app.core.ports.table_exporter_port import ExportMeta, ExportResult, TableExporterPort
 
-
 class PdfTableExporter(TableExporterPort):
     def export(
         self,

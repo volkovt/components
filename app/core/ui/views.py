@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QTableView, QTreeView, QListView
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QSortFilterProxyModel
+from qtpy.QtWidgets import QTableView, QTreeView, QListView
+from qtpy.QtCore import Qt, QAbstractTableModel, QModelIndex, QSortFilterProxyModel
 from .base import AppWidgetMixin, set_default_focus_policy
-
 
 class AppTableView(QTableView, AppWidgetMixin):
     def __init__(self, parent=None):

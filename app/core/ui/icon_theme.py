@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 
 import qtawesome as qta
-from PySide6.QtWidgets import QWidget
-from PySide6.QtGui import QIcon
-
+from qtpy.QtWidgets import QWidget
+from qtpy.QtGui import QIcon
 
 def _hex_to_rgb01(hex_color: str) -> tuple[float, float, float]:
     s = hex_color.strip()

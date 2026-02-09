@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-
-from PySide6.QtWidgets import QApplication
+from typing import TYPE_CHECKING
 
 from .theme_manager import ThemeManager
 from .theme_types import DensityMode, ThemeMode, ThemeSelection
 from .icon_theme import IconTheme
 
+if TYPE_CHECKING:
+    from .application import AppApplication
 
 class AppTheme:
     """
@@ -43,9 +44,8 @@ class AppTheme:
         sel = self._manager.selection
         self._manager.set_selection(ThemeSelection.with_(sel.theme, density))
 
-    def apply(self, app: QApplication) -> None:
+    def apply(self, app: AppApplication) -> None:
         compiled = self._manager.apply(app)
-        # Aplica tokens do tema no qtawesome (defaults + refresh)
         IconTheme.apply_tokens(compiled.tokens)
 
     def _on_theme_changed(self, _fingerprint: str) -> None:

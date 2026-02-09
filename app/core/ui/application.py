@@ -3,9 +3,9 @@ from __future__ import annotations
 import sys
 from typing import Callable, Optional
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QApplication
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QFont
+from qtpy.QtWidgets import QApplication
 
 from .theme_types import ThemeMode
 from .base import apply_app_theme, set_theme_mode, set_density

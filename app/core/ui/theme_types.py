@@ -5,7 +5,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Union
 
-
 class ThemeMode(str, Enum):
     DARK = "dark"
     LIGHT = "light"

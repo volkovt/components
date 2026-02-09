@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QLabel
-from PySide6.QtCore import Qt
+from qtpy.QtWidgets import QLabel
+from qtpy.QtCore import Qt
 from .base import AppWidgetMixin
-
 
 class AppLabel(QLabel, AppWidgetMixin):
     def __init__(self, text: str = "", parent=None, role: str | None = None, selectable: bool = False):

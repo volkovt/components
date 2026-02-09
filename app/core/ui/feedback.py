@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QProgressBar, QSizePolicy
-from PySide6.QtCore import Qt
+from qtpy.QtWidgets import QWidget, QHBoxLayout, QProgressBar, QSizePolicy
+from qtpy.QtCore import Qt
 
 from .typography import Badge, MutedLabel
 from .base import AppWidgetMixin
-
 
 class InlineStatus(QWidget, AppWidgetMixin):
     def __init__(self, parent=None):

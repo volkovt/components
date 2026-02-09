@@ -9,9 +9,6 @@ from typing import Any, Callable, Iterable, Mapping, Optional, Sequence, Tuple, 
 from app.core.ports.exporter_registry import ExporterRegistry
 from app.core.ports.table_exporter_port import ExportMeta, ExportResult
 
-
-# A UI (tables.py) já usa um TableDataPort próprio (fetch_page(query)->TablePage).
-# Mantemos compatível via Protocol, sem depender de SQLite/SQLAlchemy diretamente.
 class TablePageLike(Protocol):
     rows: Sequence[Mapping[str, Any]]
     total_rows: int

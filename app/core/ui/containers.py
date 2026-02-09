@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QWidget
-from PySide6.QtCore import Qt
+from qtpy.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QWidget
+from qtpy.QtCore import Qt
 
 from .base import AppWidgetMixin
 from .typography import SubtitleLabel, MutedLabel
@@ -51,8 +51,6 @@ class Divider(QFrame, AppWidgetMixin):
         self.setFrameShape(QFrame.HLine)
         self.setFrameShadow(QFrame.Plain)
         self.setFixedHeight(1)
-        # keep minimal local style to remove default frame artifacts
-        self.setStyleSheet("background: transparent; border: 0px;")
 
 class Toolbar(QWidget, AppWidgetMixin):
     def __init__(self, parent=None):

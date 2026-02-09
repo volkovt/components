@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QTabWidget, QWidget
+from qtpy.QtCore import Qt, Signal
+from qtpy.QtGui import QIcon
+from qtpy.QtWidgets import QTabWidget, QWidget
 
 
 @dataclass(frozen=True)

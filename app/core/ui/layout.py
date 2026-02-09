@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout
+from qtpy.QtWidgets import QVBoxLayout, QHBoxLayout
 
 def vbox(margins=(0, 0, 0, 0), spacing=10) -> QVBoxLayout:
     l = QVBoxLayout()

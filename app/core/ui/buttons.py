@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
-from PySide6.QtWidgets import QPushButton, QToolButton
-from PySide6.QtGui import QIcon
-from PySide6.QtCore import Qt, QSize
+from qtpy.QtWidgets import QPushButton, QToolButton
+from qtpy.QtGui import QIcon
+from qtpy.QtCore import Qt, QSize
 
 from .base import AppWidgetMixin, set_default_focus_policy, repolish
 

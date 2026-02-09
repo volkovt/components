@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import math
 import time
-import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional, Protocol, Sequence, List, Tuple
+from typing import Any, Mapping, Optional, Protocol, Sequence, List, Tuple, Dict, Set
 
 from qtpy.QtCore import (
     Qt, QObject, Signal, QRunnable, QThreadPool, QAbstractTableModel, QModelIndex,
@@ -15,19 +14,19 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QAction, QGuiApplication, QIcon
 from qtpy.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
-    QTableView, QSizePolicy, QHeaderView, QMenu,
-    QInputDialog, QMessageBox
+    QTableView, QSizePolicy, QHeaderView,
+    QInputDialog
 )
 
+from app.core.ui.menus import AppMenu
+from app.core.ui.messagebox import AppMessageBox
 from app.core.ports.exporter_registry import ExporterRegistry
-from app.core.ui import AppToolButton, AppSpinBox, AppComboBox, AppLineEdit, AppButton, AppDialog
+from app.core.ui import AppToolButton, AppSpinBox, AppLineEdit, AppButton, AppDialog
 from app.core.ui.icon_theme import IconTheme
 from app.core.ui.typography import AppLabel
 from app.core.use_cases.export_table import ExportRequest, ExportTableUseCase
 from app.infra.export.excel.xlsx_exporter import XlsxTableExporter
 from app.infra.export.pdf.pdf_exporter import PdfTableExporter
-
-import qtawesome as qta
 
 # -----------------------------
 # DTOs / Contracts
@@ -51,14 +50,14 @@ class TableQuery:
     page_size: int
 
     search_text: str = ""
-    search_mode: str = "contem"  # contem|comeca|igual|regex
+    search_mode: str = "contem"  # mantido por compatibilidade
     search_case_sensitive: bool = False
     search_accent_insensitive: bool = True
 
     filters: Tuple[FilterSpec, ...] = ()
     sort: Tuple[SortSpec, ...] = ()
 
-    searchable_keys: Tuple[str, ...] = ()  # vazio => "todas as colunas visíveis"
+    searchable_keys: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -77,7 +76,6 @@ class TableDataPort(Protocol):
 # -----------------------------
 # Helpers
 # -----------------------------
-
 def _norm_text(s: str, accent_insensitive: bool) -> str:
     if not accent_insensitive:
         return s
@@ -91,10 +89,21 @@ def _safe_str(v: Any) -> str:
     return str(v)
 
 
+def _human_filter(spec: FilterSpec) -> str:
+    if spec.op == "contem":
+        return f"contém '{_safe_str(spec.value)}'"
+    if spec.op == "igual":
+        return f"igual a '{_safe_str(spec.value)}'"
+    if spec.op == "gt":
+        return f"> '{_safe_str(spec.value)}'"
+    if spec.op == "lt":
+        return f"< '{_safe_str(spec.value)}'"
+    return f"{spec.op} '{_safe_str(spec.value)}'"
+
+
 # -----------------------------
 # Worker
 # -----------------------------
-
 class _FetchSignals(QObject):
     ok = Signal(object, int)
     fail = Signal(object, int)
@@ -116,13 +125,11 @@ class _FetchTask(QRunnable):
             self.signals.fail.emit(e, self._request_id)
 
 
-
 # -----------------------------
 # Export (Worker + UseCase wiring)
 # -----------------------------
-
 class _ExportSignals(QObject):
-    progress = Signal(int, int)  # done, total
+    progress = Signal(int, int)
     ok = Signal(object)
     fail = Signal(object)
 
@@ -151,11 +158,17 @@ class _ExportTask(QRunnable):
         except Exception as e:
             self.signals.fail.emit(e)
 
+
+# -----------------------------
+# Model
+# -----------------------------
 class SmartTableModel(QAbstractTableModel):
     def __init__(self, columns: List[Tuple[str, str]]):
         super().__init__()
         self._columns: List[Tuple[str, str]] = list(columns)
         self._rows: List[dict] = []
+        self._filtered_keys: Set[str] = set()
+        self._filter_hints: Dict[str, str] = {}
 
     def columns(self) -> List[Tuple[str, str]]:
         return list(self._columns)
@@ -167,7 +180,19 @@ class SmartTableModel(QAbstractTableModel):
         self.beginResetModel()
         self._columns = list(columns)
         self._rows = []
+        self._filtered_keys = set()
+        self._filter_hints = {}
         self.endResetModel()
+
+    def set_filtered_keys(self, keys: Set[str]) -> None:
+        self._filtered_keys = set(keys)
+        if self.columnCount() > 0:
+            self.headerDataChanged.emit(Qt.Horizontal, 0, self.columnCount() - 1)
+
+    def set_filter_hints(self, hints: Dict[str, str]) -> None:
+        self._filter_hints = dict(hints)
+        if self.columnCount() > 0:
+            self.headerDataChanged.emit(Qt.Horizontal, 0, self.columnCount() - 1)
 
     def reset_rows(self, rows: Sequence[Mapping[str, Any]]) -> None:
         self.beginResetModel()
@@ -214,27 +239,37 @@ class SmartTableModel(QAbstractTableModel):
         return None
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole):
+        if orientation != Qt.Horizontal:
+            if role == Qt.DisplayRole:
+                return str(section + 1)
+            return None
+
+        if not (0 <= section < len(self._columns)):
+            return None
+
+        key, title = self._columns[section]
+
+        if role == Qt.ToolTipRole:
+            return self._filter_hints.get(key, "")
+
         if role != Qt.DisplayRole:
             return None
 
-        if orientation == Qt.Horizontal:
-            if 0 <= section < len(self._columns):
-                return self._columns[section][1]
-            return ""
-
-        return str(section + 1)
+        if key in self._filtered_keys:
+            return f"{title} ⏷"
+        return title
 
     def row_dict(self, row: int) -> Optional[Mapping[str, Any]]:
         if row < 0 or row >= len(self._rows):
             return None
         return self._rows[row]
 
+
 # -----------------------------
 # Controller
 # -----------------------------
-
 class SmartTableController(QObject):
-    changed = Signal(object, int)          # TablePage, request_id
+    changed = Signal(object, int)
     loading_changed = Signal(bool)
     error = Signal(str)
 
@@ -258,8 +293,9 @@ class SmartTableController(QObject):
 
         self._request_id = 0
         self._loading = False
-
         self._append_mode = False
+
+        self._pending_refresh = False
 
     def data_port(self) -> TableDataPort:
         return self._port
@@ -275,21 +311,30 @@ class SmartTableController(QObject):
     def set_search(self, text: str, mode: str = "contem",
                    case_sensitive: bool = False, accent_insensitive: bool = True) -> None:
         self._search_text = text or ""
-        self._search_mode = mode
-        self._case_sensitive = case_sensitive
-        self._accent_insensitive = accent_insensitive
+        self._search_mode = mode or "contem"
+        self._case_sensitive = bool(case_sensitive)
+        self._accent_insensitive = bool(accent_insensitive)
+        self.goto_page(1)
+
+    def set_search_and_filters(self, *, text: str, filters: List[FilterSpec],
+                               case_sensitive: bool = False, accent_insensitive: bool = True) -> None:
+        self._search_text = text or ""
+        self._search_mode = "contem"
+        self._case_sensitive = bool(case_sensitive)
+        self._accent_insensitive = bool(accent_insensitive)
+        self._filters = list(filters)
         self.goto_page(1)
 
     def set_filters(self, filters: List[FilterSpec]) -> None:
         self._filters = list(filters)
         self.goto_page(1)
 
-    def add_filter(self, spec: FilterSpec) -> None:
-        self._filters.append(spec)
-        self.goto_page(1)
-
     def clear_filters(self) -> None:
         self._filters = []
+        self.goto_page(1)
+
+    def add_filter(self, spec: FilterSpec) -> None:
+        self._filters.append(spec)
         self.goto_page(1)
 
     def set_sort(self, sort: List[SortSpec]) -> None:
@@ -343,6 +388,8 @@ class SmartTableController(QObject):
 
     def refresh(self, append: bool = False) -> None:
         if self._loading:
+            self._pending_refresh = True
+            self._append_mode = False
             return
 
         self._append_mode = append
@@ -362,12 +409,18 @@ class SmartTableController(QObject):
         self._total_rows = int(page.total_rows)
         self._emit_loading(False)
         self.changed.emit(page, request_id)
+        if self._pending_refresh:
+            self._pending_refresh = False
+            self.refresh(append=False)
 
     def _on_fail(self, exc: Exception, request_id: int) -> None:
         if request_id != self._request_id:
             return
         self._emit_loading(False)
         self.error.emit(_safe_str(exc))
+        if self._pending_refresh:
+            self._pending_refresh = False
+            self.refresh(append=False)
 
     def goto_page(self, page: int) -> None:
         self._page = max(1, int(page))
@@ -396,10 +449,18 @@ class SmartTableController(QObject):
 # -----------------------------
 # Widget
 # -----------------------------
+class AppTableView(QTableView):
+        def __init__(self, parent=None):
+            super().__init__(parent)
+            self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        def sizeHint(self) -> QSize:
+            base = super().sizeHint()
+            return QSize(base.width(), base.height() + 20)
 
 class AppTable(QWidget):
     row_activated = Signal(dict)
-    selection_changed = Signal(object)  # dict | None
+    selection_changed = Signal(object)
 
     def __init__(self, port: TableDataPort, columns: List[Tuple[str, str]]):
         super().__init__()
@@ -407,11 +468,17 @@ class AppTable(QWidget):
         self._controller = SmartTableController(port)
         self._model = SmartTableModel(columns)
 
+        self._base_filters: List[FilterSpec] = []
+        self._column_filters: Dict[str, FilterSpec] = {}
+
         self._search = AppLineEdit()
         self._search.setPlaceholderText("Pesquisar (global) …")
 
-        self._search_mode = AppComboBox()
-        self._search_mode.addItems(["contem", "comeca", "igual", "regex"])
+        self._btn_clear_filters = AppButton()
+        self._btn_clear_filters.setIconSize(QSize(18, 18))
+        self._btn_clear_filters.setCursor(Qt.PointingHandCursor)
+        self._btn_clear_filters.setToolTip("Limpar pesquisa e filtros")
+        IconTheme.bind(self._btn_clear_filters, "fa5s.broom")
 
         self._page_size = AppSpinBox()
         self._page_size.setRange(10, 2000)
@@ -440,9 +507,6 @@ class AppTable(QWidget):
         self._page_jump.setObjectName("PagerSpin")
         self._page_jump.setToolTip("Ir para página")
 
-        self._btn_clear_filters = AppButton("Limpar filtros")
-        self._btn_clear_filters.setToolTip("Remove todos os filtros ativos")
-
         self._btn_export = AppToolButton()
         self._btn_export.setObjectName("GearButton")
         self._btn_export.setToolTip("Ações")
@@ -456,11 +520,11 @@ class AppTable(QWidget):
         self._lbl_page = AppLabel("Página 1/1 — 0 itens")
         self._lbl_page.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-        self._table = QTableView()
+        self._table = AppTableView()
         self._table.setModel(self._model)
         self._table.setSortingEnabled(False)
-        self._table.setSelectionBehavior(QTableView.SelectRows)
-        self._table.setSelectionMode(QTableView.SingleSelection)
+        self._table.setSelectionBehavior(AppTableView.SelectRows)
+        self._table.setSelectionMode(AppTableView.SingleSelection)
         self._table.setAlternatingRowColors(True)
         self._table.verticalHeader().setVisible(False)
         self._table.horizontalHeader().setStretchLastSection(True)
@@ -477,7 +541,7 @@ class AppTable(QWidget):
         top = QHBoxLayout()
         top.setSpacing(8)
         top.addWidget(self._search, 1)
-        top.addWidget(self._search_mode, 0)
+        top.addWidget(self._btn_clear_filters, 0)
         top.addWidget(AppLabel("Page size:"), 0)
         top.addWidget(self._page_size, 0)
         top.addWidget(self._btn_export, 0)
@@ -505,7 +569,6 @@ class AppTable(QWidget):
         self._controller.error.connect(self._on_error)
 
         self._search.textChanged.connect(self._debounced_search)
-        self._search_mode.currentTextChanged.connect(self._debounced_search)
         self._search_timer.timeout.connect(self._do_search)
 
         self._page_size.valueChanged.connect(self._controller.set_page_size)
@@ -517,7 +580,7 @@ class AppTable(QWidget):
 
         self._page_jump.valueChanged.connect(self._controller.goto_page)
 
-        self._btn_clear_filters.clicked.connect(self._controller.clear_filters)
+        self._btn_clear_filters.clicked.connect(self._clear_all_filters)
 
         self._pool = QThreadPool.globalInstance()
 
@@ -537,23 +600,27 @@ class AppTable(QWidget):
 
         self._install_header_menu()
         self._table.horizontalHeader().sectionClicked.connect(self._on_header_clicked)
+        if hasattr(self._table.horizontalHeader(), "sectionDoubleClicked"):
+            self._table.horizontalHeader().sectionDoubleClicked.connect(self._on_header_double_clicked)
 
         self._sort_state: List[SortSpec] = []
         self._sort_col: Optional[int] = None
         self._sort_asc: bool = True
 
+        self._sync_filter_visuals()
         self._controller.goto_page(1)
 
     # -------------------------
     # Public API
     # -------------------------
-
     def set_columns(self, columns: List[Tuple[str, str]]) -> None:
         self._model.set_columns(columns)
+        self._clear_all_filters()
         self._controller.goto_page(1)
 
     def set_filters(self, filters: List[FilterSpec]) -> None:
-        self._controller.set_filters(filters)
+        self._base_filters = list(filters)
+        self._apply_query_now()
 
     def set_sort(self, sort: List[SortSpec]) -> None:
         self._controller.set_sort(sort)
@@ -565,9 +632,105 @@ class AppTable(QWidget):
         self._controller.refresh(append=False)
 
     # -------------------------
-    # Internal
+    # Internal (Filters/Search)
     # -------------------------
+    def _combined_filters(self) -> List[FilterSpec]:
+        return list(self._base_filters) + list(self._column_filters.values())
 
+    def _apply_query_now(self) -> None:
+        self._controller.set_search_and_filters(
+            text=self._search.text(),
+            filters=self._combined_filters(),
+            case_sensitive=False,
+            accent_insensitive=True,
+        )
+        self._sync_filter_visuals()
+
+    def _sync_filter_visuals(self) -> None:
+        combined = self._combined_filters()
+
+        by_key: Dict[str, List[str]] = {}
+        for f in combined:
+            by_key.setdefault(f.key, []).append(_human_filter(f))
+
+        keys = set(by_key.keys())
+        hints = {k: "Filtro: " + " | ".join(v) for k, v in by_key.items()}
+
+        self._model.set_filtered_keys(keys)
+        self._model.set_filter_hints(hints)
+
+        has_any = bool(self._search.text().strip()) or bool(combined)
+        self._btn_clear_filters.setEnabled(has_any and not self._controller.is_loading())
+
+    def _clear_all_filters(self) -> None:
+        self._search_timer.stop()
+        self._base_filters = []
+        self._column_filters = {}
+        self._search.blockSignals(True)
+        self._search.setText("")
+        self._search.blockSignals(False)
+        self._apply_query_now()
+
+    def _clear_column_filter(self, key: str) -> None:
+        if key in self._column_filters:
+            del self._column_filters[key]
+            self._apply_query_now()
+
+    def _coerce_filter_value(self, key: str, raw: str) -> Any:
+        sample = None
+        for r in self._model.rows():
+            v = r.get(key)
+            if v is not None and _safe_str(v).strip() != "":
+                sample = v
+                break
+
+        if sample is None:
+            return raw
+
+        if isinstance(sample, bool):
+            s = raw.strip().lower()
+            if s in ("1", "true", "t", "sim", "s", "yes", "y"):
+                return True
+            if s in ("0", "false", "f", "nao", "não", "n", "no"):
+                return False
+            return raw
+
+        if isinstance(sample, int):
+            try:
+                return int(raw.strip())
+            except Exception:
+                return raw
+
+        if isinstance(sample, float):
+            try:
+                return float(raw.strip().replace(",", "."))
+            except Exception:
+                return raw
+
+        return raw
+
+    def _prompt_column_filter(self, key: str, title: str, op: str) -> None:
+        if op == "igual":
+            label = f"Igual a '{title}':"
+        else:
+            label = f"Contém em '{title}':"
+
+        value, ok = QInputDialog.getText(self, "Filtro", label)
+        if not ok:
+            return
+
+        value = (value or "").strip()
+        if not value:
+            self._clear_column_filter(key)
+            return
+
+        typed = self._coerce_filter_value(key, value) if op == "igual" else value
+        self._column_filters[key] = FilterSpec(key=key, op=op, value=typed)
+        self._apply_query_now()
+
+    # -------------------------
+    # Header: menu + sort + filter
+    # -------------------------
     def _install_header_menu(self) -> None:
         header = self._table.horizontalHeader()
         header.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -582,33 +745,47 @@ class AppTable(QWidget):
         key = self._model._columns[col][0]
         title = self._model._columns[col][1]
 
-        menu = QMenu(self)
+        menu = AppMenu(parent=self)
 
         act_sort_asc = QAction("Ordenar A → Z", self)
         act_sort_desc = QAction("Ordenar Z → A", self)
         act_sort_clear = QAction("Limpar ordenação", self)
-        act_filter = QAction(f"Filtrar por '{title}'…", self)
-        act_clear = QAction("Limpar filtros", self)
 
         act_sort_asc.triggered.connect(lambda: self._set_sort_from_column(key, ascending=True, additive=False))
         act_sort_desc.triggered.connect(lambda: self._set_sort_from_column(key, ascending=False, additive=False))
         act_sort_clear.triggered.connect(self._clear_sort)
 
-        act_filter.triggered.connect(lambda: self._prompt_column_filter(key, title))
-        act_clear.triggered.connect(self._controller.clear_filters)
-
         menu.addAction(act_sort_asc)
         menu.addAction(act_sort_desc)
         menu.addAction(act_sort_clear)
         menu.addSeparator()
-        menu.addAction(act_filter)
+
+        act_filter_contains = QAction(f"Filtrar (contém) em '{title}'…", self)
+        act_filter_equals = QAction(f"Filtrar (igual) em '{title}'…", self)
+
+        act_filter_contains.triggered.connect(lambda: self._prompt_column_filter(key, title, op="contem"))
+        act_filter_equals.triggered.connect(lambda: self._prompt_column_filter(key, title, op="igual"))
+
+        menu.addAction(act_filter_contains)
+        menu.addAction(act_filter_equals)
+
+        if key in self._column_filters:
+            menu.addSeparator()
+            act_clear_col = QAction(f"Limpar filtro de '{title}'", self)
+            act_clear_col.triggered.connect(lambda: self._clear_column_filter(key))
+            menu.addAction(act_clear_col)
+
         menu.addSeparator()
-        menu.addAction(act_clear)
+        act_clear_all = QAction("Limpar pesquisa e filtros", self)
+        act_clear_all.triggered.connect(self._clear_all_filters)
+        menu.addAction(act_clear_all)
+
         menu.exec(header.mapToGlobal(pos))
 
     def _on_header_clicked(self, logical_index: int) -> None:
         if logical_index < 0 or logical_index >= len(self._model._columns):
             return
+
         key = self._model._columns[logical_index][0]
         mods = QGuiApplication.keyboardModifiers()
         additive = bool(mods & Qt.ShiftModifier)
@@ -620,6 +797,13 @@ class AppTable(QWidget):
             self._sort_asc = True
 
         self._set_sort_from_column(key, ascending=self._sort_asc, additive=additive)
+
+    def _on_header_double_clicked(self, logical_index: int) -> None:
+        if logical_index < 0 or logical_index >= len(self._model._columns):
+            return
+        key = self._model._columns[logical_index][0]
+        title = self._model._columns[logical_index][1]
+        self._prompt_column_filter(key, title, op="contem")
 
     def _set_sort_from_column(self, key: str, ascending: bool, additive: bool) -> None:
         if not additive:
@@ -652,25 +836,14 @@ class AppTable(QWidget):
         order = Qt.AscendingOrder if primary.ascending else Qt.DescendingOrder
         header.setSortIndicator(col, order)
 
-    def _prompt_column_filter(self, key: str, title: str) -> None:
-        value, ok = QInputDialog.getText(self, "Filtro", f"Contém em '{title}':")
-        if not ok:
-            return
-        value = value.strip()
-        if not value:
-            return
-        self._controller.add_filter(FilterSpec(key=key, op="contem", value=value))
-
-    def set_qss(self, qss: str) -> None:
-        self.setStyleSheet(qss)
-
+    # -------------------------
+    # Search & paging
+    # -------------------------
     def _debounced_search(self) -> None:
         self._search_timer.start()
 
     def _do_search(self) -> None:
-        text = self._search.text()
-        mode = self._search_mode.currentText()
-        self._controller.set_search(text=text, mode=mode, case_sensitive=False, accent_insensitive=True)
+        self._apply_query_now()
 
     def eventFilter(self, obj, event):
         if obj is self._table and event.type() == QEvent.KeyPress:
@@ -709,7 +882,6 @@ class AppTable(QWidget):
         self._update_footer()
 
         if self._model.rowCount() > 0 and not self._table.currentIndex().isValid():
-            # Evita "roubar" o foco do campo de pesquisa enquanto o usuário digita.
             if not self._search.hasFocus():
                 self._table.selectRow(0)
 
@@ -731,20 +903,17 @@ class AppTable(QWidget):
         self._btn_last.setEnabled(p < tp and not loading)
 
     def _on_loading(self, loading: bool) -> None:
-        # Não desabilite o campo de pesquisa enquanto carrega, para evitar perda de foco a cada tecla.
-        # Mantemos apenas controles que podem gerar navegação/paginação concorrente.
         self._page_size.setEnabled(not loading)
-        self._btn_clear_filters.setEnabled(not loading)
-        self._btn_first.setEnabled(self._controller.page() > 1 and not loading)
-        self._btn_prev.setEnabled(self._controller.page() > 1 and not loading)
-        self._btn_next.setEnabled(self._controller.page() < self._controller.total_pages() and not loading)
-        self._btn_last.setEnabled(self._controller.page() < self._controller.total_pages() and not loading)
         self._page_jump.setEnabled(not loading)
+        self._btn_clear_filters.setEnabled((not loading) and (bool(self._search.text().strip()) or bool(self._combined_filters())))
         self._update_footer()
 
     def _on_error(self, msg: str) -> None:
         self._lbl_page.setText(f"Erro: {msg}")
 
+    # -------------------------
+    # Row signals
+    # -------------------------
     def _emit_row_activated(self, index: QModelIndex) -> None:
         row = index.row()
         d = self._model.row_dict(row)
@@ -763,12 +932,10 @@ class AppTable(QWidget):
     # Export UI
     # -------------------------
     def _install_export_menu(self) -> None:
-        root_menu = QMenu(self)
+        root_menu = AppMenu(parent=self)
 
-        # Submenu: Exportar
-        export_menu = QMenu("Exportar", self)
+        export_menu = AppMenu("Exportar", self)
 
-        # Ícones específicos por tipo
         ico_excel = QIcon("assets/icons/excel.svg")
         ico_pdf = QIcon("assets/icons/pdf.svg")
 
@@ -790,12 +957,11 @@ class AppTable(QWidget):
         export_menu.addAction(act_pdf_all)
 
         root_menu.addMenu(export_menu)
-
         self._btn_export.setMenu(root_menu)
 
     def _export(self, *, fmt: str, mode: str) -> None:
         if self._controller.is_loading():
-            QMessageBox.information(self, "Aguarde", "A tabela ainda está carregando. Tente exportar novamente em alguns instantes.")
+            AppMessageBox.information(self, "Aguarde", "A tabela ainda está carregando. Tente exportar novamente em alguns instantes.")
             return
 
         ext = "xlsx" if fmt == "xlsx" else "pdf"
@@ -847,18 +1013,17 @@ class AppTable(QWidget):
     def _on_export_ok(self, res) -> None:
         self._btn_export.setEnabled(True)
         self._update_footer()
-        QMessageBox.information(self, "Exportação concluída", f"Arquivo gerado com sucesso:\n{res.path}\n\nLinhas: {res.rows_exported}")
+        AppMessageBox.information(self, "Exportação concluída", f"Arquivo gerado com sucesso:\n{res.path}\n\nLinhas: {res.rows_exported}")
 
     def _on_export_fail(self, exc: Exception) -> None:
         self._btn_export.setEnabled(True)
         self._update_footer()
-        QMessageBox.critical(self, "Falha ao exportar", _safe_str(exc))
+        AppMessageBox.critical(self, "Falha ao exportar", _safe_str(exc))
 
 
 # -----------------------------
 # Optional: In-memory adapter (demo / tests)
 # -----------------------------
-
 class InMemoryTablePort:
     def __init__(self, rows: List[dict]):
         self._rows = list(rows)
@@ -871,7 +1036,6 @@ class InMemoryTablePort:
             return ""
         if (not case_sensitive) and accent_insensitive:
             return self._norm_cache[row_index].get(key, "")
-
         v = _safe_str(self._rows[row_index].get(key, ""))
         if not case_sensitive:
             v = v.lower()
@@ -883,51 +1047,25 @@ class InMemoryTablePort:
         idxs: List[int] = list(range(len(self._rows)))
 
         s = query.search_text or ""
-        mode = query.search_mode
         searchable = list(query.searchable_keys)
 
         if s:
-            rx: Optional[re.Pattern[str]] = None
-            if mode == "regex":
-                try:
-                    flags = 0 if query.search_case_sensitive else re.IGNORECASE
-                    rx = re.compile(query.search_text, flags=flags)
-                except re.error:
-                    rx = None
-
             keys_for_search: Optional[List[str]] = searchable if searchable else None
-
-            def match_norm(base: str) -> bool:
-                if mode == "igual":
-                    return base == s
-                if mode == "comeca":
-                    return base.startswith(s)
-                if mode == "contem":
-                    return s in base
-                return s in base
 
             kept_idxs: List[int] = []
             for i in idxs:
                 r = self._rows[i]
                 keys = keys_for_search if keys_for_search is not None else list(r.keys())
-                if mode == "regex":
-                    if rx is None:
-                        continue
-                    for k in keys:
-                        if rx.search(_safe_str(r.get(k))):
-                            kept_idxs.append(i)
-                            break
-                else:
-                    for k in keys:
-                        base = self._norm_cell(
-                            i,
-                            k,
-                            case_sensitive=query.search_case_sensitive,
-                            accent_insensitive=query.search_accent_insensitive,
-                        )
-                        if match_norm(base):
-                            kept_idxs.append(i)
-                            break
+                for k in keys:
+                    base = self._norm_cell(
+                        i,
+                        k,
+                        case_sensitive=query.search_case_sensitive,
+                        accent_insensitive=query.search_accent_insensitive,
+                    )
+                    if s in base:
+                        kept_idxs.append(i)
+                        break
             idxs = kept_idxs
 
         for f in query.filters:
@@ -940,9 +1078,15 @@ class InMemoryTablePort:
                     if needle in self._norm_cell(i, f.key, case_sensitive=False, accent_insensitive=True)
                 ]
             elif f.op == "gt":
-                idxs = [i for i in idxs if self._rows[i].get(f.key) is not None and self._rows[i].get(f.key) > f.value]
+                idxs = [
+                    i for i in idxs
+                    if self._rows[i].get(f.key) is not None and self._rows[i].get(f.key) > f.value
+                ]
             elif f.op == "lt":
-                idxs = [i for i in idxs if self._rows[i].get(f.key) is not None and self._rows[i].get(f.key) < f.value]
+                idxs = [
+                    i for i in idxs
+                    if self._rows[i].get(f.key) is not None and self._rows[i].get(f.key) < f.value
+                ]
 
         def sort_key(v: Any) -> Any:
             if v is None:

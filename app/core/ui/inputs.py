@@ -4,15 +4,16 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Optional, Callable
 
-from PySide6.QtWidgets import (
+from PySide6.QtCore import QSize
+from qtpy.QtWidgets import (
     QLineEdit, QTextEdit, QPlainTextEdit, QComboBox,
-    QSpinBox, QDoubleSpinBox, QDateEdit, QTimeEdit, QDateTimeEdit
+    QSpinBox, QDoubleSpinBox, QDateEdit, QTimeEdit, QDateTimeEdit,
+    QAbstractSpinBox,
 )
-from PySide6.QtGui import QValidator, QIntValidator, QDoubleValidator, QRegularExpressionValidator
-from PySide6.QtCore import QDate, QTime, QDateTime, QLocale, QSignalBlocker, QRegularExpression
+from qtpy.QtGui import QValidator, QIntValidator, QDoubleValidator
+from qtpy.QtCore import Qt, QDate, QTime, QDateTime, QLocale, QSignalBlocker
 
 from .base import AppWidgetMixin, set_default_focus_policy
-
 
 @dataclass(frozen=True)
 class ValidationResult:
@@ -134,33 +135,84 @@ class AppComboBox(QComboBox, AppWidgetMixin):
         return ValidationResult(ok, "" if ok else "Selecione um item.")
 
 
-class AppSpinBox(QSpinBox, AppWidgetMixin):
+class _ElegantSpinBehavior:
+    def _configure_spin_common(self) -> None:
+        self.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
+        self.setAccelerated(True)
+        self.setKeyboardTracking(False)
+        self.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
+
+        try:
+            self.setGroupSeparatorShown(True)
+        except Exception:
+            pass
+
+        try:
+            self.lineEdit().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        except Exception:
+            pass
+
+        set_default_focus_policy(self)
+
+        self._default_value = self.value()
+
+    def set_default_value(self, value) -> None:
+        self._default_value = value
+
+    def reset_to_default(self) -> None:
+        self.setValue(self._default_value)
+
+    def wheelEvent(self, event) -> None:
+        if not self.hasFocus():
+            event.ignore()
+            return
+        super().wheelEvent(event)
+
+    def stepBy(self, steps: int) -> None:
+        mods = Qt.KeyboardModifier(self.keyboardModifiers())
+        mult = 1
+        if mods & Qt.ShiftModifier:
+            mult *= 10
+        if mods & Qt.ControlModifier:
+            mult *= 100
+        super().stepBy(steps * mult)
+
+class AppSpinBox(QSpinBox, AppWidgetMixin, _ElegantSpinBehavior):
     def __init__(self, parent=None, minimum: int = 0, maximum: int = 10 ** 9):
         super().__init__(parent)
         self.setRange(minimum, maximum)
-        set_default_focus_policy(self)
+        self._configure_spin_common()
 
-
-class AppDoubleSpinBox(QDoubleSpinBox, AppWidgetMixin):
+class AppDoubleSpinBox(QDoubleSpinBox, AppWidgetMixin, _ElegantSpinBehavior):
     def __init__(self, parent=None, minimum: float = 0.0, maximum: float = 10 ** 12, decimals: int = 2):
         super().__init__(parent)
         self.setRange(minimum, maximum)
         self.setDecimals(decimals)
-        set_default_focus_policy(self)
-
+        self._configure_spin_common()
 
 class AppDateEdit(QDateEdit, AppWidgetMixin):
     def __init__(self, parent=None, default: Optional[QDate] = None, calendar_popup: bool = True):
         super().__init__(parent)
         self.setCalendarPopup(calendar_popup)
         self.setDate(default or QDate.currentDate())
+        self.setFixedSize(QSize(120, self.sizeHint().height()))
         set_default_focus_policy(self)
-
 
 class AppTimeEdit(QTimeEdit, AppWidgetMixin):
     def __init__(self, parent=None, default: Optional[QTime] = None):
         super().__init__(parent)
         self.setTime(default or QTime.currentTime())
+
+        self.setButtonSymbols(QAbstractSpinBox.UpDownArrows)
+        self.setAccelerated(True)
+        self.setKeyboardTracking(False)
+        self.setCorrectionMode(QAbstractSpinBox.CorrectToNearestValue)
+
+        try:
+            self.lineEdit().setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        except Exception:
+            pass
+
         set_default_focus_policy(self)
 
 
@@ -168,9 +220,12 @@ class AppDateTimeEdit(QDateTimeEdit, AppWidgetMixin):
     def __init__(self, parent=None, default: Optional[QDateTime] = None, calendar_popup: bool = True):
         super().__init__(parent)
         self.setCalendarPopup(calendar_popup)
+
+        self.setDisplayFormat("dd/MM/yyyy HH:mm")
+        self.setFixedSize(QSize(150, self.sizeHint().height()))
+
         self.setDateTime(default or QDateTime.currentDateTime())
         set_default_focus_policy(self)
-
 
 class AppMoneyLineEdit(AppLineEdit):
     def __init__(

@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable
 
-from PySide6.QtCore import QFileSystemWatcher, QObject, Signal
-from PySide6.QtWidgets import QApplication
+from qtpy.QtCore import QFileSystemWatcher, QObject, Signal
+from qtpy.QtWidgets import QApplication
 
 from .theme_types import DensityMode, ThemeMode, ThemePaths, ThemeSelection
 

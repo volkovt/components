@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QScrollArea, QWidget
-
+from qtpy.QtWidgets import QScrollArea, QWidget
 
 class AppScrollArea(QScrollArea):
     def __init__(self, parent=None, *, widget_resizable: bool = True, frame: bool = False):
